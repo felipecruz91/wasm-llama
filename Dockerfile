@@ -23,6 +23,14 @@ set -ex
 cargo build --target wasm32-wasi --release
 EOF
 
+FROM --platform=linux/amd64 alpine:3.17 AS model
+WORKDIR /src
+RUN <<EOF
+apk add --no-cache curl
+curl -LO https://huggingface.co/TheBloke/Llama-2-7b-Chat-GGUF/resolve/main/llama-2-7b-chat.Q5_K_M.gguf
+EOF
+
 FROM scratch
 COPY --link --from=build /src/target/wasm32-wasi/release/wasmedge-ggml-llama-interactive.wasm /app.wasm
+COPY --link --from=model /src/llama-2-7b-chat.Q5_K_M.gguf /llama-2-7b-chat.Q5_K_M.gguf
 ENTRYPOINT [ "/app.wasm" ]
